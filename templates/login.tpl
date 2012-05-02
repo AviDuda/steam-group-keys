@@ -1,4 +1,4 @@
-{include "site.tpl"}
+{extends "site.tpl"}
 {block content}
 <p>
 	Click on the button and sign in with your Steam credentials.

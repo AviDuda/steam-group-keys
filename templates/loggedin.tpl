@@ -1,4 +1,4 @@
-{include "site.tpl"}
+{extends "site.tpl"}
 {block content}
 User: <a href="{$user_info['profileurl']}"><img src="{$user_info['avatar']}" style="padding-right: 10px;">{$user_info['personaname']}</a>
 <a href="?logout" style="padding-left: 42px;">Logout</a>
