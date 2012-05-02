@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>Steam group key giveaway</title>
+	</head>
+	<body>
+		<h1>Steam group key giveaway</h1>
+		
+		{block content}{/block}
+		
+	</body>
+</html>
