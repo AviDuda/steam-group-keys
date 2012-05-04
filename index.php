@@ -1,68 +1,87 @@
 <?php
 session_start();
+
 include 'inc/config.php';
 
-if (!isset($_GET['logout']) && isset($_SESSION['steamid']))
+// get group memberlist from cache or web
+libxml_use_internal_errors(true);
+$tries = 5;
+$xpath_error = false;
+while ($tries > 0)
 {
+	try
+	{
+		// load from cache only if file exists and file modification time is less than $memberlist_update_time seconds
+		if ($xpath_error || !file_exists($memberlist_file) || ($memberlist_update_time - (time() - filemtime($memberlist_file))) <= 0)
+		{
+			$memberlist = $api->getProfile($group_url, 'group');
+			file_put_contents('safe://' . $memberlist_file, $memberlist);
+			$memberlist = new SimpleXMLElement($memberlist);
+		}
+		else
+		{
+			$memberlist_xml;
+			$memberlist;
+			if (!($memberlist_xml = file_get_contents($memberlist_file)) || $memberlist_xml == '' || !($memberlist = simplexml_load_string($memberlist_xml)))
+			{
+				$xpath_error = true;
+				throw new Exception;
+			}
+			$xpath = $memberlist->xpath('/memberList/members/steamID64');	
+			if (!is_array($xpath) || !$xpath || count($xpath) == 0)
+			{
+				$xpath_error = true;
+				throw new Exception;
+			}
+		}
+		
+		break;
+	}
+	catch (Exception $e)
+	{
+		if ($tries == 1)
+		{
+			die('Unable to fetch the group memberlist. Steam servers may be overloaded, wait a minute and reload the page.');
+		}
+		$tries--;
+	}
+}
+
+if (!isset($_GET['page']))
+{
+	$_GET['page'] = 'index';
+}
+
+if (!in_array($_GET['page'], array('login', 'logout')) && isset($_SESSION['steamid']))
+{
+	// user is logged in
+	
 	$steamid = $_SESSION['steamid'];
 	
 	// fancy info so user knows he's logged in
 	if (!isset($_SESSION['user_info']))
 	{	
-		$user_info_url = 'http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?format=json&key=' . $api_key . '&steamids=' . $steamid;
-		$user_info = json_decode(file_get_contents($user_info_url), true);
+		$user_info = $api->playerInfo($steamid);
 		$_SESSION['user_info'] = $user_info['response']['players'][0];
 	}
 	$smarty->assign('user_info', $_SESSION['user_info']);
 	
-	// get group memberlist from cache or web
-	if (file_exists($memberlist_file) && filemtime($memberlist_file) > time() - $memberlist_update_time)
+	$is_admin = false;
+	$admins = json_decode(file_get_contents($admins_file));
+	if (in_array($steamid, $admins, true))
 	{
-		// load from cache if file exists and file modification time is less than an hour
-		$memberlist = simplexml_load_file($memberlist_file);
+		$is_admin = true;
+		$smarty->assign('is_admin', $is_admin);
+	}
+	
+	if ($_GET['page'] != 'index' && file_exists('./controllers/' . $_GET['page'] . '.php'))
+	{
+		include './controllers/' . $_GET['page'] . '.php';
 	}
 	else
 	{
-		// get memberlist from web and save it to cache
-		$group_url .= ($group_url[strlen($group_url) - 1] != '/') ? '/' : ''; // add trailing slash
-		$memberlist = file_get_contents($group_url . 'memberslistxml/?xml=1');
-		file_put_contents('safe://' . $memberlist_file, $memberlist);
-		$memberlist = new SimpleXMLElement($memberlist);
+		include './controllers/index.php';
 	}
-	
-	$found = in_array($steamid, $memberlist->xpath('/memberList/members/steamID64'));
-	
-	if ($found)
-	{
-		$claimed_keys_array = json_decode(file_get_contents($claimed_keys_file), true);
-		foreach ($claimed_keys_array as $arr)
-		{
-			foreach($arr as $k => $id)
-			{
-				if ($id === $steamid) // yay, big numbers
-					$key = $k;
-			}
-		}
-		if (!isset($key))
-		{
-			// user doesn't have a key, give it to him
-			// safe operations with files (no keys duplicity) provided by inc/SafeStream.php - see http://doc.nette.org/en/atomicity
-			
-			$keys = file_get_contents('safe://' . $bundle_keys);
-			$keys = json_decode($keys);
-			$key = array_pop($keys);
-			$claimed_keys_array[] = array($key => $steamid);
-			file_put_contents('safe://' . $claimed_keys_file, json_encode($claimed_keys_array));
-			file_put_contents('safe://' . $bundle_keys, json_encode($keys));
-		}
-		
-		$smarty->assign('key', $key);
-	}
-	
-	$keys = file_get_contents($bundle_keys);
-	$smarty->assign('remaining_keys', count(json_decode($keys)));
-	
-	$smarty->display('loggedin.tpl');
 }
 else
 {
@@ -70,12 +89,12 @@ else
 		$openid = new LightOpenID($_SERVER['HTTP_HOST']);
 		if(!$openid->mode)
 		{
-			if(isset($_GET['login']))
+			if($_GET['page'] == 'login')
 			{
 				$openid->identity = 'http://steamcommunity.com/openid';
 				header('Location: ' . $openid->authUrl());
 			}
-			elseif (isset($_GET['logout']))
+			elseif ($_GET['page'] == 'logout')
 			{
 				session_destroy();
 				$openid->mode = 'cancel';
@@ -98,6 +117,6 @@ else
 	}
 	catch(ErrorException $e)
 	{
-		print $e->getMessage();
+		print 'Error. Contact group admins, please.';
 	}
 }

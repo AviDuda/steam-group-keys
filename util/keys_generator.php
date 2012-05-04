@@ -1,7 +1,14 @@
 <?php
+/**
+ * Small utility for creating keys for testing. 
+ */
+
 include 'inc/config.php';
 
 $generate_keys = 50;
+$key_length = 15; // without separators
+$separator_after_chars = 5; // e.g. 5 => ABCDE-FGHIJ if $separator == '-'
+$separator = '-';
 
 $keys = array();
 $characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -9,12 +16,11 @@ $characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 for ($i = 0; $i < $generate_keys; $i++)
 {
 	$key = '';
-	for ($char = 0; $char < 17; $char++)
+	for ($char = 0; $char < $key_length + ($key_length / $separator_after_chars) - 1; $char++)
 	{
-		// generated key example: 4Y0UQ-3UREO-V2QFE
-		if ($char == 5 || $char == 11)
+		if (($char + 1) % ($separator_after_chars + 1) == 0)
 		{
-			$key .= '-';
+			$key .= $separator;
 		}
 		else
 		{
@@ -31,6 +37,7 @@ for ($i = 0; $i < $generate_keys; $i++)
 		$keys[] = $key;
 	}
 }
+
 $keys = json_encode($keys);
 if (file_put_contents($bundle_keys, $keys))
 {
