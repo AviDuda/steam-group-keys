@@ -50,9 +50,10 @@ class SteamAPI
 	 * Fetch extended info of a user profile or a Steam group.
 	 * @param mixed $id SteamID64, custom name or absolute URL of the Steam Community profile.
 	 * @param string $type Type of the profile ('user', 'group'). Default 'user'.
+	 * @param int $groupMembersPage Number of the page if the group has more members than 1000. ($type = 'group' only)
 	 * @return string XML with the info. 
 	 */
-	function getProfile($id, $type = 'user')
+	function getProfile($id, $type = 'user', $groupMembersPage = 1)
 	{
 		$url = $id;
 		$suffix = '';
@@ -68,7 +69,7 @@ class SteamAPI
 				$suffix = '?xml=1';
 				break;
 			case 'group':
-				$suffix = '/memberslistxml/?xml=1';
+				$suffix = '/memberslistxml/?xml=1&p=' . $groupMembersPage;
 				break;
 		}
 		

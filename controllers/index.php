@@ -1,5 +1,5 @@
 <?php
-$found = in_array($steamid, $memberlist->xpath('/memberList/members/steamID64'));
+$found = in_array($steamid, $memberlist, true);
 
 if ($found)
 {

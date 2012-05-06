@@ -3,48 +3,17 @@ session_start();
 
 include 'inc/config.php';
 
-// get group memberlist from cache or web
-libxml_use_internal_errors(true);
-$tries = 5;
-$xpath_error = false;
-while ($tries > 0)
+// get group member list from cache or web
+if (file_exists($memberlist_file) && ($memberlist_update_time - (time() - filemtime($memberlist_file))) > 0)
 {
-	try
+	if (!($memberlist = json_decode(file_get_contents($memberlist_file))) || empty($memberlist) || !is_array($memberlist) || !is_numeric($memberlist[0]))
 	{
-		// load from cache only if file exists and file modification time is less than $memberlist_update_time seconds
-		if ($xpath_error || !file_exists($memberlist_file) || ($memberlist_update_time - (time() - filemtime($memberlist_file))) <= 0)
-		{
-			$memberlist = $api->getProfile($group_url, 'group');
-			file_put_contents('safe://' . $memberlist_file, $memberlist);
-			$memberlist = new SimpleXMLElement($memberlist);
-		}
-		else
-		{
-			$memberlist_xml;
-			$memberlist;
-			if (!($memberlist_xml = file_get_contents($memberlist_file)) || $memberlist_xml == '' || !($memberlist = simplexml_load_string($memberlist_xml)))
-			{
-				$xpath_error = true;
-				throw new Exception;
-			}
-			$xpath = $memberlist->xpath('/memberList/members/steamID64');	
-			if (!is_array($xpath) || !$xpath || count($xpath) == 0)
-			{
-				$xpath_error = true;
-				throw new Exception;
-			}
-		}
-		
-		break;
+		$memberlist = memberlist_save($group_url, $memberlist_file, $api);
 	}
-	catch (Exception $e)
-	{
-		if ($tries == 1)
-		{
-			die('Unable to fetch the group memberlist. Steam servers may be overloaded, wait a minute and reload the page.');
-		}
-		$tries--;
-	}
+}
+else
+{
+	$memberlist = memberlist_save($group_url, $memberlist_file, $api);
 }
 
 if (!isset($_GET['page']))
@@ -71,8 +40,8 @@ if (!in_array($_GET['page'], array('login', 'logout')) && isset($_SESSION['steam
 	if (in_array($steamid, $admins, true))
 	{
 		$is_admin = true;
-		$smarty->assign('is_admin', $is_admin);
 	}
+	$smarty->assign('is_admin', $is_admin);
 	
 	if ($_GET['page'] != 'index' && file_exists('./controllers/' . $_GET['page'] . '.php'))
 	{

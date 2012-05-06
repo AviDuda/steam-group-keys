@@ -81,12 +81,12 @@ if (isset($_GET['action']))
 		}
 		else
 		{
-			die('It isn\'t an admin.');
+			die('This SteamID isn\'t an admin.');
 		}
 	}
 	elseif ($_GET['action'] == 'updatememberlist')
 	{
-		file_put_contents('safe://' . $memberlist_file, $api->getProfile($group_url, 'group'));
+		memberlist_save($group_url, $memberlist_file, $api);
 		header('Location: ./?page=admin');
 	}
 }

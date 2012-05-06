@@ -3,7 +3,7 @@
  * Small utility for creating keys for testing. 
  */
 
-include 'inc/config.php';
+include '../inc/config.php';
 
 $generate_keys = 50;
 $key_length = 15; // without separators
@@ -39,10 +39,10 @@ for ($i = 0; $i < $generate_keys; $i++)
 }
 
 $keys = json_encode($keys);
-if (file_put_contents($bundle_keys, $keys))
+if (file_put_contents('../' . $bundle_keys, $keys))
 {
 	print 'Keys generated.';
 }
 else print 'Error';
 
-print '<br><a href="./">Home</a>';
+print '<br><a href="../">Home</a>';

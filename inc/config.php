@@ -4,7 +4,7 @@ $group_url = ''; // http://steamcommunity.com/groups/GroupName or http://steamco
 
 $bundle_keys = 'inc/keys.json';
 $claimed_keys_file = 'inc/claimed_keys.json';
-$memberlist_file = 'inc/groupmembers.xml'; // automatically created
+$memberlist_file = 'inc/memberlist.json';
 $memberlist_update_time = 3600; // in seconds
 $admins_file = "inc/admins.json";
 
@@ -12,11 +12,12 @@ $admins_file = "inc/admins.json";
 ini_set('display_errors', 1);
 error_reporting(E_ALL|E_STRICT);
 
+include 'functions.php';
 include 'openid.php';
-include 'smarty/Smarty.class.php';
 include 'SafeStream.php';
+include 'smarty/Smarty.class.php';
 include 'SteamAPI.php';
 
-$smarty = new Smarty();
 SafeStream::register();
+$smarty = new Smarty();
 $api = new SteamAPI($api_key);
